@@ -91,6 +91,7 @@ TEST(haicam_TCPTest, tcp_test) {
     context->run();
     client->close();
     delete context;
+    i++;
     }
 
    ASSERT_EQ(close_connection,10);
