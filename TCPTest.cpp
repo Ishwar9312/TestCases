@@ -7,6 +7,15 @@ using namespace haicam;
 using namespace std::placeholders;
 
 int haicam_TCPTest_callback_times = 0;
+int close_connection = 0;
+int error = 0;
+void haicam_TCPTest_server_onCloseCallback(TCPConnectionPtr conn){
+    close_connection++;
+}
+
+void haicam_TCPTest_server_onErrorCallback(){
+    error++;
+}
 
 void haicam_TCPTest_server_onSentCallback(TCPServer* server, TCPConnectionPtr conn)
 {
@@ -63,12 +72,15 @@ TEST(haicam_TCPTest, tcp_test) {
     server->onSentCallback = std::bind(haicam_TCPTest_server_onSentCallback, server.get(), _1);
     server->listen();
 
-    TCPClientPtr client = TCPClient::create(context, "127.0.0.1", 8888);
+   
+    int i = 0;
+    TCPClientPtr client;
+    while(i < 10){
+    client = TCPClient::create(context, "127.0.0.1", 8888);
     client->onConnectedCallback = std::bind(haicam_TCPTest_client_onConnectedCallback, client.get(), _1);
     client->onDataCallback = std::bind(haicam_TCPTest_client_onDataCallback, client.get(), _1, _2);
     client->connect();
-
-    uv_timer_t timer;
+     uv_timer_t timer;
     
     timer.data = (void*) server.get();
 
@@ -77,7 +89,11 @@ TEST(haicam_TCPTest, tcp_test) {
     uv_timer_start(&timer, haicam_TCPTest_timeout, 3000, 0);
 
     context->run();
+    client->close();
     delete context;
+    }
 
-    ASSERT_EQ(haicam_TCPTest_callback_times, 6);
+   ASSERT_EQ(close_connection,10);
+
+   // ASSERT_EQ(haicam_TCPTest_callback_times, 6);
 }
